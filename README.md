@@ -4,6 +4,16 @@ A pacman log analyzer
 
 ## Install
 
+### Package from AUR
+
+```
+$ git clone https://aur.archlinux.org/paclog.git
+$ cd paclog
+$ makepkg -si
+```
+
+Thanks to [Marcel Walk](https://github.com/MarcelWalk) for creating and maintaining the package.
+
 ### pip
 
 ```
@@ -30,7 +40,13 @@ $ cd paclog
 # install -m 0755 paclog /usr/bin/paclog
 ```
 
-## Remove
+## Uninstall
+
+### pacman
+
+```
+# pacman -R paclog
+```
 
 ### pip
 
