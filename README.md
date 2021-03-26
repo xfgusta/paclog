@@ -130,4 +130,4 @@ $paclog --help
 
 The MIT License (MIT)
 
-paclog 1.0 Copyright (C) 2021 Gustavo Costa
+paclog 1.1 Copyright (C) 2021 Gustavo Costa

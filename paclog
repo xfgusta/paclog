@@ -109,6 +109,7 @@ def argparser():
                         help='clean log file and exit')
     parser.add_argument('-c', '--color', action='store_true',
                         help='colorize the output')
+    parser.add_argument('--version', action='version', version='%(prog)s 1.1')
     return parser.parse_args()
 
 

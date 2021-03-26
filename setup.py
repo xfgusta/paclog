@@ -87,11 +87,11 @@ $paclog --help
 
 The MIT License (MIT)
 
-paclog 1.0 Copyright (C) 2021 Gustavo Costa
+paclog 1.1 Copyright (C) 2021 Gustavo Costa
 '''
 
 setup(name='paclog',
-      version='1.0',
+      version='1.1',
       description='A pacman log analyzer',
       long_description=LONG_DESCRIPTION,
       long_description_content_type='text/markdown',
