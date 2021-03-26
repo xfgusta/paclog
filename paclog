@@ -10,10 +10,6 @@ time = r'T(?P<hour>\d+):(?P<minute>\d+):.*\]'
 op   = r'(?P<op>installed|removed|upgraded)'
 pkg  = r' (?P<pkg>.*) \((?P<ver>.*)\)'
 
-red, green = '\033[31m', '\033[32m'
-blue, cyan = '\033[34m', '\033[36m'
-reset = '\033[0m'
-
 filters = {
     'in': 'installed',
     'rm': 'removed',
@@ -25,7 +21,12 @@ def main():
 
     logfile = args.file if args.file else getlogfile('/etc/pacman.conf')
 
-    if not args.color:
+    global red, green, blue, cyan, reset
+    if args.color:
+        red, green = '\033[31m', '\033[32m'
+        blue, cyan = '\033[34m', '\033[36m'
+        reset = '\033[0m'
+    else:
         red = green = blue = cyan = reset = ''
     
     if args.clean:
