@@ -2,9 +2,9 @@
 
 A pacman log analyzer
 
-# Install
+## Install
 
-## pip
+### pip
 
 ```
 $ pip install git+https://github.com/xfgusta/paclog.git
@@ -19,10 +19,10 @@ $ export PATH="$HOME/.local/bin:$PATH"
 You can also add it to your `.bashrc`
 
 ```
-$ echo 'export PATH="$HOME/.local/bin:$PATH' >> ~/.bashrc
+$ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 ```
 
-## Manually
+### Manually
 
 ```
 $ git clone https://github.com/xfgusta/paclog.git
@@ -30,21 +30,21 @@ $ cd paclog
 # install -m 0755 paclog /usr/bin/paclog
 ```
 
-# Remove
+## Remove
 
-## pip
+### pip
 
 ```
 # pip uninstall paclog
 ```
 
-## Manually
+### Manually
 
 ```
 # rm /usr/bin/paclog
 ```
 
-# Usage
+## Usage
 
 View installed, removed, and upgraded packages
 
@@ -120,13 +120,13 @@ Show help message
 $paclog --help
 ```
 
-# Screenshots
+## Screenshots
 
 ![](img/img-01.png?raw=true)
 
 ![](img/img-02.png?raw=true)
 
-# License
+## License
 
 The MIT License (MIT)
 
