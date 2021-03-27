@@ -49,15 +49,14 @@ def main():
 
     try:        
         with open(log_file, 'r') as f:
-            if not args.short:
-                max_len = 0
-                for line in f:
-                    if m := pkg.match(line):
-                        length = len(m['pkg'])
-                        if length > max_len:
-                            max_len = length
-                f.seek(0)
+            max_len = 0
+            for line in f:
+                if m := pkg.match(line):
+                    length = len(m['pkg'])
+                    if length > max_len:
+                        max_len = length
             
+            f.seek(0)
             for line in f:
                 if m := p.match(line):
                     if(not search(args.package, m['pkg']) or
@@ -71,8 +70,6 @@ def main():
                             print(f'{red}-{reset}', end='  ')
                         elif m['op'] == 'upgraded':
                             print(f'{blue}>{reset}', end='  ')
-                        
-                        print(m['pkg'])
                     else:
                         print(f"{m['d']}/{m['m']}/{m['y']}  "
                               f"{m['hour']}:{m['minute']}", end='  ')
@@ -83,9 +80,9 @@ def main():
                             print(f'{red}removed{reset}  ', end='  ')
                         elif m['op'] == 'upgraded':
                             print(f'{blue}upgraded{reset} ', end='  ')
-                        
-                        spaces = ' ' * (max_len - len(m['pkg']) + 2)
-                        print(m['pkg'] + spaces + cyan + m['ver'] + reset)
+                    
+                    spaces = ' ' * (max_len - len(m['pkg']) + 2)
+                    print(m['pkg'] + spaces + cyan + m['ver'] + reset)
     except IOError:
         die(f'cannot read {log_file}')
     except:
