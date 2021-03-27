@@ -5,21 +5,12 @@ from argparse import ArgumentParser
 from re import compile, search
 from os import getuid
 
-data = r'\[(?P<y>\d+)-(?P<m>\d+)-(?P<d>\d+)'
-time = r'T(?P<hour>\d+):(?P<minute>\d+):.*\]'
-op   = r'(?P<op>installed|removed|upgraded)'
-pkg  = r' (?P<pkg>.*) \((?P<ver>.*)\)'
-
-filters = {
-    'in': 'installed',
-    'rm': 'removed',
-    'up': 'upgraded'
-}
 
 def main():
     args = argparser()
 
-    logfile = args.file if args.file else getlogfile('/etc/pacman.conf')
+    global log_file
+    log_file = args.file if args.file else get_log_file('/etc/pacman.conf')
 
     global red, green, blue, cyan, reset
     if args.color:
@@ -29,33 +20,47 @@ def main():
     else:
         red = green = blue = cyan = reset = ''
     
+    filters = {
+        'in': 'installed',
+        'rm': 'removed',
+        'up': 'upgraded'
+    }
+
     if args.clean:
-        clean(logfile)
-        print(f'{logfile} cleaned')
+        clean()
+        print(f'{log_file} cleaned')
         exit(0)
     elif args.show:
-        print(getlogfile('/etc/pacman.conf'))
+        print(get_log_file('/etc/pacman.conf'))
         exit(0)
     elif args.raw:
-        raw(logfile)
+        raw()
         exit(0)
 
-    try:
-        p = compile(r'^' + data + time + r' \[ALPM\] ' + op + pkg + r'$')
-        with open(logfile, 'r') as f:
+    p = compile(r'^\[(?P<y>\d+)-(?P<m>\d+)-(?P<d>\d+)'
+                r'T(?P<hour>\d+):(?P<minute>\d+):.*\] '
+                r'\[ALPM\] '
+                r'(?P<op>installed|removed|upgraded) '
+                r'(?P<pkg>.*) \((?P<ver>.*)\)$')
+        
+    pkg = compile(r'^\[.*\] \[ALPM\] '
+                  r'(installed|removed|upgraded) (?P<pkg>.*) '
+                  r'\(.*\)$')
+
+    try:        
+        with open(log_file, 'r') as f:
             if not args.short:
-                maxlen = 0
+                max_len = 0
                 for line in f:
-                    if m := p.match(line):
+                    if m := pkg.match(line):
                         length = len(m['pkg'])
-                        if length > maxlen:
-                            maxlen = length
-                
+                        if length > max_len:
+                            max_len = length
                 f.seek(0)
             
             for line in f:
                 if m := p.match(line):
-                    if(args.package and not search(args.package, m['pkg']) or
+                    if(not search(args.package, m['pkg']) or
                             args.filter and filters[args.filter] != m['op']):
                         continue
                     
@@ -70,9 +75,7 @@ def main():
                         print(m['pkg'])
                     else:
                         print(f"{m['d']}/{m['m']}/{m['y']}  "
-                              f"{m['hour']}:{m['minute']}",
-                              end='  '
-                        )
+                              f"{m['hour']}:{m['minute']}", end='  ')
 
                         if m['op'] == 'installed':
                             print(f'{green}installed{reset}', end='  ')
@@ -81,11 +84,10 @@ def main():
                         elif m['op'] == 'upgraded':
                             print(f'{blue}upgraded{reset} ', end='  ')
                         
-                        spaces = ' ' * (maxlen - len(m['pkg']) + 2)
+                        spaces = ' ' * (max_len - len(m['pkg']) + 2)
                         print(m['pkg'] + spaces + cyan + m['ver'] + reset)
-
     except IOError:
-        die(f'cannot read {logfile}')
+        die(f'cannot read {log_file}')
     except:
         die(exc_info()[1])
 
@@ -113,34 +115,34 @@ def argparser():
     return parser.parse_args()
 
 
-def raw(logfile):
+def raw():
     try:
-        with open(logfile, 'r') as f:
+        with open(log_file, 'r') as f:
             for line in f:
                 print(line, end='')
     except:
-        die(f'error: cannot read {logfile}')
+        die(f'error: cannot read {log_file}')
 
 
-def clean(logfile):
+def clean():
     if getuid() != 0:
         die('you cannot perform this operation unless you are root')
     try:
-        with open(logfile, 'r+') as f:
+        with open(log_file, 'r+') as f:
             f.truncate(0)
     except:
-        die(f'cannot clean {logfile}')
+        die(f'cannot clean {log_file}')
 
 
-def getlogfile(conf):
+def get_log_file(conf):
     try:
-        p = compile(r'^LogFile\s*=\s*(.*)$')
+        p = compile(r'^LogFile\s*=\s*(?P<path>.*)$')
         with open(conf, 'r') as f:
             for line in f:
                 if m := p.match(line):
-                    return m[1]
+                    return m['path']
     except:
-        die(f'cannot parse {logfile}')
+        die(f'cannot parse {conf}')
     
     return '/var/log/pacman.log'
 
@@ -148,7 +150,6 @@ def getlogfile(conf):
 def die(msg):
     print(f'{red}error:{reset} {msg}', file=stderr)
     exit(1)
-
 
 if __name__ == '__main__':
     main()
