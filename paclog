@@ -118,7 +118,7 @@ def raw():
             for line in f:
                 print(line, end='')
     except:
-        die(f'error: cannot read {log_file}')
+        die(f'cannot read {log_file}')
 
 
 def clean():
