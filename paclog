@@ -10,7 +10,7 @@ def main():
     args = argparser()
 
     global log_file
-    log_file = args.file if args.file else get_log_file('/etc/pacman.conf')
+    log_file = args.file if args.file else get_log_file()
 
     global red, green, blue, cyan, reset
     if args.color:
@@ -31,7 +31,7 @@ def main():
         print(f'{log_file} cleaned')
         exit(0)
     elif args.show:
-        print(get_log_file('/etc/pacman.conf'))
+        print(get_log_file())
         exit(0)
     elif args.raw:
         raw()
@@ -95,7 +95,7 @@ def argparser():
                         default='.*',
                         help='a regular expression for the package search')
     parser.add_argument('--file', action='store', type=str,
-                        help='set an alternate log file')
+                        help='use an alternate log file')
     parser.add_argument('-f', dest='filter', choices=['in', 'rm', 'up'],
                         help='filter operations')
     parser.add_argument('-s', '--short', action='store_true',
@@ -131,7 +131,8 @@ def clean():
         die(f'cannot clean {log_file}')
 
 
-def get_log_file(conf):
+def get_log_file():
+    conf = '/etc/pacman.conf'
     try:
         p = compile(r'^LogFile\s*=\s*(?P<path>.*)$')
         with open(conf, 'r') as f:
