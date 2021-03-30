@@ -51,7 +51,7 @@ $ cd paclog
 ### pip
 
 ```
-# pip uninstall paclog
+$ pip uninstall paclog
 ```
 
 ### Manually
@@ -98,7 +98,7 @@ Enable less verbose mode
 $ paclog --short
 ```
 
-Set an alternate log file
+Use an alternate log file
 
 ```
 $ paclog --file pacman.log
@@ -121,7 +121,7 @@ Clean log file
 Read raw log file
 
 ```
-# paclog --raw
+$ paclog --raw
 ```
 
 Colored output
@@ -133,7 +133,7 @@ $ paclog --color
 Show help message
 
 ```
-$paclog --help
+$ paclog --help
 ```
 
 ## Screenshots
