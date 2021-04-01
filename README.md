@@ -12,8 +12,6 @@ $ cd paclog
 $ makepkg -si
 ```
 
-Thanks to [Marcel Walk](https://github.com/MarcelWalk) for creating and maintaining the package.
-
 ### pip
 
 ```
@@ -60,90 +58,28 @@ $ pip uninstall paclog
 # rm /usr/bin/paclog
 ```
 
-## Usage
-
-View installed, removed, and upgraded packages
-
-```
-$ paclog
-```
-
-View only installed packages
-
-```
-$ paclog --filter in
-```
-
-View only removed packages
-
-```
-$ paclog --filter rm
-```
-
-View only upgraded packages
-
-```
-$ paclog --filter up
-```
-
-Search for packages using regular expression
-
-```
-$ paclog ^xorg
-```
-
-Enable less verbose mode
-
-```
-$ paclog --short
-```
-
-Use an alternate log file
-
-```
-$ paclog --file pacman.log
-```
-
-Show default pacman log file
-
-```
-$ paclog --show
-/var/log/pacman.log
-```
-
-Clean log file
-
-```
-# paclog --clean
-/var/log/pacman.log cleaned
-```
-
-Read raw log file
-
-```
-$ paclog --raw
-```
-
-Colored output
-
-```
-$ paclog --color
-```
-
-Show help message
-
-```
-$ paclog --help
-```
-
-## Screenshots
+# Screenshots
 
 ![](img/img-01.png?raw=true)
 
 ![](img/img-02.png?raw=true)
 
+![](img/img-03.png?raw=true)
+
+![](img/img-04.png?raw=true)
+
+![](img/img-05.png?raw=true)
+
+![](img/img-06.png?raw=true)
+
+## Acknowledgements
+
++ [Marcel Walk](https://github.com/MarcelWalk) for creating and maintaining the AUR package
+
++ [Ricardo Costa](https://github.com/ricxpl) for helping me solve some issues
+
 ## License
 
 The MIT License (MIT)
 
-paclog 1.1 Copyright (C) 2021 Gustavo Costa
+paclog 2.0 Copyright (C) 2021 Gustavo Costa

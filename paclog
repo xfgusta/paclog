@@ -5,6 +5,27 @@ from argparse import ArgumentParser
 from re import compile, search
 from os import getuid
 
+op = compile(r'^\[(?P<y>\d+)-(?P<m>\d+)-(?P<d>\d+)'
+             r'T(?P<hour>\d+):(?P<minute>\d+):.*\] '
+             r'\[ALPM\] '
+             r'(?P<op>installed|removed|upgraded|downgraded) '
+             r'(?P<pkg>.*) \((?P<ver>.*)\)$')
+
+running = compile(r'^\[.*\] \[PACMAN\] Running \'(?P<cmd>.*)\'$')
+started = compile(r'\[.*\] \[ALPM\] transaction started$')
+completed = compile(r'^\[.*\] \[ALPM\] transaction completed$')
+logfile = compile(r'^LogFile\s*=\s*(?P<path>.*)$')
+
+filters = {
+    'in': 'installed',
+    'rm': 'removed',
+    'up': 'upgraded',
+    'dw': 'downgraded'
+}
+
+red, green, blue = '\033[31m', '\033[32m', '\033[34m'
+cyan, yellow, reset = '\033[36m', '\033[33m', '\033[0m'
+
 
 def main():
     args = argparser()
@@ -12,23 +33,15 @@ def main():
     global log_file
     log_file = args.file if args.file else get_log_file()
 
-    global red, green, blue, cyan, reset
-    if args.color:
-        red, green = '\033[31m', '\033[32m'
-        blue, cyan = '\033[34m', '\033[36m'
-        reset = '\033[0m'
-    else:
-        red = green = blue = cyan = reset = ''
-    
-    filters = {
-        'in': 'installed',
-        'rm': 'removed',
-        'up': 'upgraded'
-    }
+    global quite
+    quite = args.short
+
+    if not args.color:
+        global red, green, blue, cyan, yellow, reset
+        red = green = blue = cyan = yellow = reset = ''
 
     if args.clean:
         clean()
-        print(f'{log_file} cleaned')
         exit(0)
     elif args.show:
         print(get_log_file())
@@ -36,53 +49,19 @@ def main():
     elif args.raw:
         raw()
         exit(0)
+    elif(args.transactions or args.transaction is not None):
+        transactions(args.transaction)
+        exit(0)
 
-    p = compile(r'^\[(?P<y>\d+)-(?P<m>\d+)-(?P<d>\d+)'
-                r'T(?P<hour>\d+):(?P<minute>\d+):.*\] '
-                r'\[ALPM\] '
-                r'(?P<op>installed|removed|upgraded) '
-                r'(?P<pkg>.*) \((?P<ver>.*)\)$')
-        
-    pkg = compile(r'^\[.*\] \[ALPM\] '
-                  r'(installed|removed|upgraded) (?P<pkg>.*) '
-                  r'\(.*\)$')
-
-    try:        
+    try:
         with open(log_file, 'r') as f:
-            max_len = 0
+            max_len = get_pkg_max_len(f)
             for line in f:
-                if m := pkg.match(line):
-                    length = len(m['pkg'])
-                    if length > max_len:
-                        max_len = length
-            
-            f.seek(0)
-            for line in f:
-                if m := p.match(line):
+                if m := op.match(line):
                     if(not search(args.package, m['pkg']) or
                             args.filter and filters[args.filter] != m['op']):
                         continue
-                    
-                    if args.short:
-                        if m['op'] == 'installed':
-                            print(f'{green}+{reset}', end='  ')
-                        elif m['op'] == 'removed':
-                            print(f'{red}-{reset}', end='  ')
-                        elif m['op'] == 'upgraded':
-                            print(f'{blue}>{reset}', end='  ')
-                    else:
-                        print(f"{m['d']}/{m['m']}/{m['y']}  "
-                              f"{m['hour']}:{m['minute']}", end='  ')
-
-                        if m['op'] == 'installed':
-                            print(f'{green}installed{reset}', end='  ')
-                        elif m['op'] == 'removed':
-                            print(f'{red}removed{reset}  ', end='  ')
-                        elif m['op'] == 'upgraded':
-                            print(f'{blue}upgraded{reset} ', end='  ')
-                    
-                    spaces = ' ' * (max_len - len(m['pkg']) + 2)
-                    print(m['pkg'] + spaces + cyan + m['ver'] + reset)
+                    print_info(m, max_len)
     except IOError:
         die(f'cannot read {log_file}')
     except:
@@ -96,19 +75,23 @@ def argparser():
                         help='a regular expression for the package search')
     parser.add_argument('--file', action='store', type=str,
                         help='use an alternate log file')
-    parser.add_argument('-f', dest='filter', choices=['in', 'rm', 'up'],
+    parser.add_argument('-f', dest='filter', choices=['in', 'rm', 'up', 'dw'],
                         help='filter operations')
-    parser.add_argument('-s', '--short', action='store_true',
-                        help='enable less verbose mode')
+    parser.add_argument('-t', '--transactions', action='store_true',
+                        help='show transactions and exit')
+    parser.add_argument('--transaction', metavar='ID', action='store',
+                        type=int, help='show a transaction and exit')
     parser.add_argument('--show', action='store_true',
                         help='show default log file and exit')
     parser.add_argument('--raw', action='store_true',
                         help='read log file and exit')
     parser.add_argument('--clean', action='store_true',
                         help='clean log file and exit')
+    parser.add_argument('-s', '--short', action='store_true',
+                        help='enable less verbose mode')
     parser.add_argument('-c', '--color', action='store_true',
                         help='colorize the output')
-    parser.add_argument('--version', action='version', version='%(prog)s 1.1')
+    parser.add_argument('--version', action='version', version='%(prog)s 2.0')
     return parser.parse_args()
 
 
@@ -130,14 +113,86 @@ def clean():
     except:
         die(f'cannot clean {log_file}')
 
+    print(f'{log_file} cleaned')
+
+
+def transactions(i):
+    num = line_num = trans_id = 0
+    try:
+        with open(log_file, 'r') as f:
+            max_len = get_pkg_max_len(f)
+            for line in f:
+                line_num += 1
+                if m := running.match(line):
+                    cmd, num = m['cmd'], line_num
+                if started.search(line):
+                    trans_id += 1
+                    if(i is not None and i != trans_id):
+                        continue
+                    print(f'#{trans_id} {yellow}{cmd}{reset} '
+                          f'(line {num})')
+                    for line in f:
+                        line_num += 1
+                        if completed.search(line):
+                            print()
+                            break
+                        if m := op.match(line):
+                            print_info(m, max_len)
+    except IOError:
+        die(f'cannot read {log_file}')
+    except:
+        die(exc_info()[1])
+
+
+def get_pkg_max_len(f):
+    max_len = 0
+    for line in f:
+        if m := op.match(line):
+            length = len(m['pkg'])
+            if length > max_len:
+                max_len = length
+    f.seek(0)
+    return max_len
+
+
+def print_info(m, max_len):
+    if quite:
+        if m['op'] == 'installed':
+            print(f'{green}+{reset}', end='  ')
+        elif m['op'] == 'removed':
+            print(f'{red}-{reset}', end='  ')
+        elif m['op'] == 'upgraded':
+            print(f'{blue}>{reset}', end='  ')
+        elif m['op'] == 'downgraded':
+            print(f'{blue}<{reset}', end='  ')
+    else:
+        print(f"{m['d']}/{m['m']}/{m['y']}  {m['hour']}:{m['minute']}",
+              end='  ')
+        
+        if m['op'] == 'installed':
+            print(f'{green}installed{reset} ', end='  ')
+        elif m['op'] == 'removed':
+            print(f'{red}removed{reset}   ', end='  ')
+        elif m['op'] == 'upgraded':
+            print(f'{blue}upgraded{reset}  ', end='  ')
+        elif m['op'] == 'downgraded':
+            print(f'{blue}downgraded{reset}', end='  ')
+
+    spaces = ' ' * (max_len - len(m['pkg']) + 2)
+    ver = m['ver'].split('->')
+    if len(ver) == 2:
+        print(f"{m['pkg']}{spaces}{cyan}{ver[0]}{reset}"
+              f"->{cyan}{ver[1]}{reset}")
+    else:
+        print(f"{m['pkg']}{spaces}{cyan}{ver[0]}{reset}")
+
 
 def get_log_file():
     conf = '/etc/pacman.conf'
     try:
-        p = compile(r'^LogFile\s*=\s*(?P<path>.*)$')
         with open(conf, 'r') as f:
             for line in f:
-                if m := p.match(line):
+                if m := logfile.match(line):
                     return m['path']
     except:
         die(f'cannot parse {conf}')
