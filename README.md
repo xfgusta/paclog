@@ -58,7 +58,7 @@ $ pip uninstall paclog
 # rm /usr/bin/paclog
 ```
 
-# Screenshots
+## Screenshots
 
 ![](img/img-01.png?raw=true)
 
